@@ -8,21 +8,26 @@
 import SwiftUI
 
 struct RouteView: View {
-    private let stats: [RouteStat] = [
-        .init(title: "Задач", value: "1", accent: Color.theme.violetAccent),
-        .init(title: "Выполнено", value: "2", accent: Color.theme.greenAccent),
-        .init(title: "Осталось", value: "1", accent: Color.theme.amberAccent)
+    private let tasks: [RouteTask] = [
+        .init(
+            id: UUID(),
+            type: "МКД",
+            address: "ул. Пушкина, д. 12",
+            city: "Москва",
+            area: "Центральный",
+            timeRange: "10:00 - 12:00",
+            responsible: "Иванов И.И.",
+            status: "В работе"
+        )
     ]
 
-    private let task: RouteTask = .init(
-        type: "МКД",
-        address: "ул. Пушкина, д. 12",
-        city: "Москва",
-        area: "Центральный",
-        timeRange: "10:00 - 12:00",
-        responsible: "Иванов И.И.",
-        status: "В работе"
-    )
+    private var stats: [RouteStat] {
+        [
+            .init(title: "Задач", value: "\(tasks.count)", accent: Color.theme.secondaryColor),
+            .init(title: "Выполнено", value: "2", accent: Color.theme.secondaryColor.opacity(0.85)),
+            .init(title: "Осталось", value: "1", accent: Color.theme.secondaryColor.opacity(0.65))
+        ]
+    }
 
     var body: some View {
         ZStack {
@@ -37,13 +42,20 @@ struct RouteView: View {
 
                     Text("Задачи на сегодня")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.white)
                         .padding(.top, 4)
 
-                    RouteTaskCard(task: task)
+                    if tasks.isEmpty {
+                        RouteEmptyState()
+                    } else {
+                        VStack(spacing: 14) {
+                            ForEach(tasks) { task in
+                                RouteTaskCard(task: task)
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 32)
+                .padding(.top, 52)
                 .padding(.bottom, 140)
             }
         }
@@ -53,7 +65,6 @@ struct RouteView: View {
         HStack(alignment: .center) {
             Text("Сегодня")
                 .font(.system(size: 34, weight: .bold))
-                .foregroundStyle(.white)
 
             Spacer()
 
@@ -80,8 +91,8 @@ private struct HeaderButton: View {
         Button(action: {}) {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.8))
                 .frame(width: 34, height: 34)
+                
         }
     }
 }
@@ -93,7 +104,8 @@ private struct RouteStat: Identifiable {
     let accent: Color
 }
 
-private struct RouteTask {
+private struct RouteTask: Identifiable {
+    let id: UUID
     let type: String
     let address: String
     let city: String
@@ -107,25 +119,29 @@ private struct RouteStatCard: View {
     let stat: RouteStat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .center, spacing: 1) {
             Text(stat.value)
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(stat.accent)
 
             Text(stat.title)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.7))
+                
         }
         .padding(.vertical, 18)
-        .padding(.horizontal, 22)
+        .padding(.horizontal, 2)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.theme.surfaceColor)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.theme.primaryColor)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(Color.white.opacity(0.06), lineWidth: 1)
                 )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.theme.backgroundColor.opacity(0.35), lineWidth: 1)
         )
     }
 }
@@ -138,7 +154,6 @@ private struct RouteTaskCard: View {
             HStack {
                 Text(task.type)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(
@@ -150,7 +165,6 @@ private struct RouteTaskCard: View {
 
                 Text(task.status)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
                     .background(
@@ -162,7 +176,6 @@ private struct RouteTaskCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(task.address)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.white)
 
                 Text("\(task.city) • \(task.area)")
                     .font(.system(size: 15, weight: .medium))
@@ -172,20 +185,20 @@ private struct RouteTaskCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top) {
                     Text("Планируемое время:")
+                        .foregroundStyle(Color.white.opacity(0.65))
                     Spacer()
                     Text(task.timeRange)
-                        .foregroundStyle(.white)
                 }
 
                 HStack(alignment: .top) {
                     Text("Ответственный:")
+                        .foregroundStyle(Color.white.opacity(0.65))
                     Spacer()
                     Text(task.responsible)
-                        .foregroundStyle(.white)
                 }
             }
             .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(Color.white.opacity(0.65))
+//            .foregroundStyle(Color.white.opacity(0.65))
 
             Button(action: {}) {
                 HStack {
@@ -207,7 +220,41 @@ private struct RouteTaskCard: View {
         .padding(22)
         .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.theme.elevatedSurfaceColor)
+                .fill(Color.theme.primaryColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 25)
+                .stroke(Color.theme.backgroundColor.opacity(0.25), lineWidth: 1)
+        )
+    }
+}
+
+private struct RouteEmptyState: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.45))
+
+            Text("Нет задач на сегодня")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.white)
+
+            Text("Как только появятся новые задачи, они сразу же появятся здесь.")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.55))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 38)
+        .padding(.horizontal, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(Color.theme.primaryColor)
                 .overlay(
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
                         .stroke(Color.white.opacity(0.05), lineWidth: 1)
