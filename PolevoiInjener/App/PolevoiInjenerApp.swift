@@ -11,7 +11,7 @@ import SwiftUI
 struct PolevoiInjenerApp: App {
     var body: some Scene {
         WindowGroup {
-            AuthView()
+            TabBarView()
         }
     }
 }

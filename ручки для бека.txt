@@ -1,0 +1,140 @@
+UX Карта /_admin (Desktop-First)
+
+Навигация: фиксированный сайдбар (Dashboard, Objects, Visits, Customers, Reports, Analytics, Users, Audit, Notifications, Settings); хедер с глобальным поиском, быстрыми фильтрами и действиями.
+Dashboard (/_admin/dashboard):
+KPI: количество объектов, визитов за период, конверсия интереса, просроченные перезвоны.
+Графики: динамика визитов, распределение удовлетворенности, карта плотности объектов (плейсхолдер).
+Виджеты: последние комментарии, напоминания и быстрые ссылки.
+Objects (/_admin/objects, /_admin/objects/:id):
+Таблица: город, адрес, координаты, кол-во квартир, последний визит, статус, интересы. Фильтры: город, интерес к услугам, дата визита, статус.
+Карточка объекта: паспорт (адрес, GPS), список квартир/юнитов, визиты, анкеты, заметки, история изменений; действия: редактировать, назначить визит, экспорт по объекту.
+Visits (/_admin/visits):
+Таблица: дата/время, объект/квартира, назначено на, статус (запланирован/выполнен/перенесен), итог визита; фильтры: период, исполнитель, статус.
+Массовые операции: назначение, смена статуса.
+Customers (/_admin/customers):
+Таблица: ФИО/описание портрета, телефон, объект/квартира, интересы, удовлетворенность, желаемая цена, следующий контакт.
+Фильтры: интерес к услуге, провайдер, follow‑up due, город.
+Reports (/_admin/reports):
+Конструктор: выбрать источник (объект/город/кастом), поля, фильтры, период; выгрузка XLSX.
+Пресеты (быстрые сценарии).
+Analytics (/_admin/analytics):
+Графики: уровень удовлетворенности, доля потенциальных клиентов по районам, динамика визитов. Переключатели периодов и группировок.
+Users (/_admin/users):
+Управление пользователями: список, создание, роль (engineer/supervisor/admin), деактивация, сброс пароля.
+Audit (/_admin/audit):
+Лог действий: кто/что/когда, фильтры по сущностям/пользователям.
+Notifications (/_admin/notifications):
+Лента уведомлений и настройки каналов (email/Telegram — плейсхолдеры).
+Settings (/_admin/settings):
+Справочники: города, услуги, статусы, шаблоны отчетов, интеграции (плейсхолдер).
+Состояния: пустые списки, загрузка, ошибки, пагинация, сохраненные фильтры, закрепленные колонки, экспорты.
+UX Карта /cabinet (Mobile-First с нижним таб-баром)
+
+Нижний таб‑бар (на мобильных): Route, Objects, Add, Customers, Profile. На desktop — слева мини‑навигация.
+Route (/cabinet/route):
+Список назначенных на сегодня визитов: объект, адрес, ETA, статус; кнопки “Начать”, “Завершить”, “Открыть карту”.
+Быстрые фильтры: сегодня/неделя/все, по статусу.
+Карточка визита: краткая информация, кнопка “Заполнить анкету”.
+Objects (/cabinet/objects):
+Список объектов рядом (по GPS) и назначенных; поиск и фильтры.
+Деталь: адрес, координаты, квартиры, предыдущие комментарии, кнопки “Добавить заметку”, “Новый визит/анкета”.
+Add (/cabinet/add):
+Форма анкеты: номер квартиры, портрет клиента, текущие услуги (интернет/ТВ/видео/няня), оценка удовлетворенности (1–5 или бинарная), интерес к услугам, удобное время связи, телефон, желаемая цена, примечание; авто‑GPS.
+Черновики офлайн с синхронизацией, индикатор статуса сети, валидация, сохранение/продолжить позже.
+Customers (/cabinet/customers):
+Лента сохраненных анкет/клиентов: теги интересов, статус follow‑up, кнопка звонка, фильтр “к перезвону”.
+Profile (/cabinet/profile):
+Профиль пользователя, счетчик несинхронизированных записей, “Синхронизировать сейчас”, тема (светлая/темная), справка. Выход — плейсхолдер (без реальной аутентификации).
+Backend API Спецификация (под фронтенд)
+
+Общие правила
+База: PostgreSQL. Формат времени: ISO‑8601 UTC (created_at, updated_at).
+Авторизация: JWT Bearer (для прототипа фронт может использовать мок, но бек должен поддерживать).
+Пагинация: page (1‑based), page_size (по умолчанию 20), total.
+Сортировка: sort=field:asc|desc (мульти — через запятую).
+Поиск: q (по нескольким полям).
+Ошибки: { error: { code, message, details? } }.
+Сущности (минимальные поля)
+User: id, email, full_name, role: enum['engineer','supervisor','admin'], active, created_at, updated_at.
+Object (Building): id, city, address, location{lat,lng,accuracy?}, units_count, notes_count, last_visit_at, tags[].
+Unit (Apartment): id, object_id, number, floor?, entrance?.
+Visit: id, object_id, unit_id?, assignee_id, status: enum['planned','done','rescheduled','canceled'], scheduled_at?, started_at?, finished_at?, outcome?, location{lat,lng}?.
+Customer/Survey (анкета): id, object_id, unit_id?, visit_id?, assignee_id, client_portrait, services_current[]: enum['internet','tv','cctv','nanny'], provider_satisfaction: 1..5 | 'satisfied'|'unsatisfied', interested_services[] (same enum), contact_time, phone, desired_price: number, note, location{lat,lng,accuracy?}, created_at, updated_at.
+Note (комментарий): id, object_id, unit_id?, text, author_id, created_at.
+AuditLog: id, actor_id, entity_type, entity_id, action, diff, created_at.
+Notification: id, type, title, body, read, created_at.
+Аутентификация
+POST /auth/login → req: { email, password } resp: { access_token, refresh_token, user }
+POST /auth/refresh → req: { refresh_token } resp: { access_token }
+GET /auth/me → resp: { user }
+POST /auth/logout → 204
+Пользователи
+GET /users → query: role, active, q, page, page_size, sort resp: { items: User[], page, page_size, total }
+POST /users → req: { email, full_name, role, active? } resp: User
+GET /users/{id} / PATCH /users/{id} / DELETE /users/{id}
+POST /users/{id}/reset-password → 204
+GET /roles → ['engineer','supervisor','admin']
+Объекты (дома)
+GET /objects → query: city, has_interest, last_visit_from, last_visit_to, q, page, page_size, sort
+POST /objects → req: { city, address, location?, tags?[] } resp: Object
+GET /objects/{id} / PATCH /objects/{id} / DELETE /objects/{id}
+GET /objects/{id}/units → Unit[]
+GET /objects/{id}/visits → { items: Visit[], ...pagination }
+POST /objects/bulk-import (опционально для Excel импорта) → job id
+Квартиры (юниты)
+GET /units → query: object_id, q, page, page_size
+POST /units → { object_id, number, floor?, entrance? }
+GET/PATCH/DELETE /units/{id}
+Визиты
+GET /visits → query: object_id, unit_id, assignee_id, status, from, to, page, page_size, sort
+POST /visits → { object_id, unit_id?, assignee_id, scheduled_at? }
+GET/PATCH/DELETE /visits/{id}
+POST /visits/{id}/notes → { text } resp: Note
+Анкеты/Клиенты
+GET /surveys → query: object_id, unit_id, visit_id, assignee_id, interests(any), satisfaction, phone, due_from, due_to, city, page, sort
+POST /surveys → тело анкеты (см. сущность) — используется страницей /cabinet/add и карточками объекта.
+GET/PATCH/DELETE /surveys/{id}
+Заметки
+GET /notes → query: object_id, unit_id, page, page_size
+POST /notes → { object_id, unit_id?, text }
+DELETE /notes/{id}
+Отчеты
+POST /reports/export → req: { scope: 'object'|'city'|'custom', object_id?, city?, filters?, fields?[] } resp: { report_id }
+GET /reports/{report_id}/download → XLSX
+Аналитика
+GET /analytics/summary → { objects_count, visits_period, conversion_rate, overdue_followups }
+GET /analytics/satisfaction → агрегаты по городам/районам/времени
+GET /analytics/potential-by-area → распределение интересов
+GET /analytics/visits-trend → временной ряд
+Офлайн‑синхронизация
+POST /sync/push → { surveys: Survey[], visits: Visit[] } resp: { created_ids, updated_ids, conflicts[] }
+GET /sync/pull?since=timestamp → изменения после since
+Нотификации/интеграции (опционально)
+GET /notifications / PATCH /notifications/{id} (read=true)
+POST /integrations/telegram/test → 204
+Аудит
+GET /audit → query: entity_type, entity_id, actor_id, from, to, page, page_size
+Маппинг Фронтенд → Backend
+
+/_admin/dashboard → /analytics/*, /notifications, /visits?from&to&status=planned
+/_admin/objects → /objects, /objects/{id}, /objects/{id}/units, /objects/{id}/visits, /notes
+/_admin/visits → /visits
+/_admin/customers → /surveys
+/_admin/reports → /reports/export, /reports/{id}/download
+/_admin/analytics → /analytics/*
+/_admin/users → /users, /roles
+/_admin/audit → /audit
+/cabinet/route → /visits?assignee_id=me&from=today&to=today
+/cabinet/objects → /objects?city|nearby, /objects/{id}, /notes
+/cabinet/add → POST /surveys, POST /visits (по необходимости), авто‑GPS
+/cabinet/customers → /surveys?assignee_id=me&due_from..
+/cabinet/profile → /auth/me, /sync/* (кнопка синхронизации)
+Примеры Форматов (сокращенно)
+
+GET /objects?page=1&page_size=20&city=Махачкала&q=Ленина
+resp: { items: [ { id, city, address, location:{lat,lng}, units_count, last_visit_at } ], page, page_size, total }
+POST /surveys
+req: { object_id, unit_id, client_portrait:'мужчина 40 лет', services_current:['internet'], provider_satisfaction:4, interested_services:['cctv'], contact_time:'10:00-12:00', phone:'+7...', desired_price:700, note:'...', location:{lat:43.0,lng:47.0} }
+resp: Survey
+Ошибка
+resp: 400 { error:{ code:'VALIDATION_ERROR', message:'Phone invalid', details:{ phone:'invalid_format' }}}

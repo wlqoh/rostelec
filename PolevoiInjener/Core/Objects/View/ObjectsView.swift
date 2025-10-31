@@ -10,83 +10,68 @@ import SwiftUI
 struct ObjectsView: View {
     @State private var viewMode: ObjectsViewMode = .list
     @State private var searchText: String = ""
+    @State private var path: [ObjectDestination] = []
 
-    private let buildings: [Building] = [
-        .init(
-            id: "1",
-            type: "МКД",
-            status: "В работе",
-            address: "ул. Пушкина, д. 12",
-            city: "Москва",
-            district: "Центральный",
-            distance: "3.2 км",
-            visits: 45
-        ),
-        .init(
-            id: "2",
-            type: "Бизнес-центр",
-            status: "Новый",
-            address: "пр-т Ленина, д. 50",
-            city: "Москва",
-            district: "Северный",
-            distance: "5.4 км",
-            visits: 0
-        ),
-        .init(
-            id: "3",
-            type: "ТЦ",
-            status: "Завершён",
-            address: "Торговый комплекс \"Галерея\"",
-            city: "Санкт-Петербург",
-            district: "Приморский",
-            distance: "4.8 км",
-            visits: 120
-        )
-    ]
+    private let buildings: [ObjectBuilding] = ObjectMockData.buildings
 
-    private var filteredBuildings: [Building] {
+    private var filteredBuildings: [ObjectBuilding] {
         guard !searchText.isEmpty else { return buildings }
         return buildings.filter {
             $0.address.lowercased().contains(searchText.lowercased()) ||
-            $0.city.lowercased().contains(searchText.lowercased())
+            $0.city.lowercased().contains(searchText.lowercased()) ||
+            $0.district.lowercased().contains(searchText.lowercased())
         }
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Color.theme.backgroundColor
-                .ignoresSafeArea()
+        NavigationStack(path: $path) {
+            ZStack(alignment: .bottomTrailing) {
+                Color.theme.backgroundColor
+                    .ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    header
-                    viewToggle
-                    searchField
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        header
+                        viewToggle
+                        searchField
 
-                    switch viewMode {
-                    case .list:
-                        if filteredBuildings.isEmpty {
-                            ObjectsEmptyState()
-                        } else {
-                            VStack(spacing: 16) {
-                                ForEach(filteredBuildings) { building in
-                                    ObjectsCard(building: building)
+                        switch viewMode {
+                        case .list:
+                            if filteredBuildings.isEmpty {
+                                ObjectsEmptyState()
+                            } else {
+                                VStack(spacing: 16) {
+                                    ForEach(filteredBuildings) { building in
+                                        NavigationLink(value: ObjectDestination.building(building)) {
+                                            ObjectsBuildingCard(building: building)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
                                 }
                             }
+                        case .map:
+                            ObjectsMapPlaceholder()
                         }
-
-                    case .map:
-                        ObjectsMapPlaceholder()
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 52)
+                    .padding(.bottom, 120)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 52)
-                .padding(.bottom, 120)
-            }
 
-            addButton
-                .padding(.trailing, 24)
-                .padding(.bottom, 40)
+                addButton
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 40)
+            }
+            .navigationDestination(for: ObjectDestination.self) { destination in
+                switch destination {
+                case .building(let building):
+                    ObjectDetailView(building: building)
+                case .apartment(let apartment):
+                    ApartmentDetailView(apartment: apartment)
+                case .client(let client):
+                    ClientDetailView(client: client)
+                }
+            }
         }
     }
 
@@ -153,22 +138,12 @@ struct ObjectsView: View {
 
 #Preview {
     ObjectsView()
+        .preferredColorScheme(.dark)
 }
 
 private enum ObjectsViewMode {
     case list
     case map
-}
-
-private struct Building: Identifiable {
-    let id: String
-    let type: String
-    let status: String
-    let address: String
-    let city: String
-    let district: String
-    let distance: String
-    let visits: Int
 }
 
 private struct ObjectsToggleButton: View {
@@ -197,51 +172,46 @@ private struct ObjectsToggleButton: View {
     }
 }
 
-private struct ObjectsCard: View {
-    let building: Building
+private struct ObjectsBuildingCard: View {
+    let building: ObjectBuilding
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Text(building.type)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(Color.white.opacity(0.12))
-                            )
-
-                        Text(building.status)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(Color.theme.secondaryColor)
-                            )
-                    }
-
-                    Text(building.address)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.white)
-
-                    Text("\(building.city) • \(building.district)")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.65))
-                }
-
-                Spacer()
+            HStack(spacing: 8) {
+                ObjectsPill(
+                    text: building.type,
+                    foreground: Color.white.opacity(0.9),
+                    background: Color.white.opacity(0.12)
+                )
+                ObjectsPill(
+                    text: building.status,
+                    foreground: .white,
+                    background: Color.theme.secondaryColor
+                )
+                ObjectsPill(
+                    text: building.connectionType.rawValue,
+                    foreground: Color.white.opacity(0.9),
+                    background: Color.theme.primaryColor.opacity(0.6)
+                )
             }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(building.address)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white)
+
+                Text("\(building.city) • \(building.district)")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.65))
+            }
+
+            Divider()
+                .overlay(Color.white.opacity(0.05))
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Label {
-                        Text("Расстояние:")
+                        Text("Расстояние")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Color.white.opacity(0.65))
                     } icon: {
@@ -258,7 +228,7 @@ private struct ObjectsCard: View {
                 }
 
                 HStack {
-                    Text("Визитов:")
+                    Text("Последних визитов")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color.white.opacity(0.65))
 
@@ -270,32 +240,46 @@ private struct ObjectsCard: View {
                 }
             }
 
-            Button(action: {}) {
-                HStack {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 15, weight: .bold))
-                    Text("Старт визита")
-                        .font(.system(size: 16, weight: .semibold))
+            if !building.apartments.isEmpty {
+                Divider()
+                    .overlay(Color.white.opacity(0.05))
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Подключённые квартиры")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.65))
+
+                    ForEach(building.apartments.prefix(2)) { apartment in
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Квартира \(apartment.number)")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Text("Лицевой счёт \(apartment.accountNumber)")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.white.opacity(0.6))
+                            }
+
+                            Spacer()
+
+                            if let firstService = apartment.connectedServices.first {
+                                ObjectsPill(
+                                    text: firstService,
+                                    foreground: Color.white.opacity(0.9),
+                                    background: Color.theme.primaryColor.opacity(0.55)
+                                )
+                            }
+                        }
+                    }
+
+                    if building.apartments.count > 2 {
+                        Text("+ ещё \(building.apartments.count - 2)")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.5))
+                    }
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.theme.secondaryColor)
-                )
             }
-            .buttonStyle(.plain)
         }
-        .padding(22)
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.theme.primaryColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                )
-        )
+        .objectsCard()
     }
 }
 
