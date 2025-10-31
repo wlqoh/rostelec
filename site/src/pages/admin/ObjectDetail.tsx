@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, Plus, FileDown } from "lucide-react";
 import { mockBuildings, mockVisits, mockCustomers } from "@/lib/mockData";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 
 export default function ObjectDetail() {
@@ -155,10 +157,8 @@ export default function ObjectDetail() {
             <CardHeader>
               <CardTitle>Список квартир/юнитов</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground">
-                Мини-таблица с поиском по номеру (в разработке)
-              </p>
+            <CardContent className="space-y-3">
+              <ApartmentsTable buildingAddress={building.address} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -208,9 +208,7 @@ export default function ObjectDetail() {
               <CardTitle>Комментарии</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-muted-foreground">
-                Лента комментариев с формой (в разработке)
-              </p>
+              <CommentsPanel />
             </CardContent>
           </Card>
         </TabsContent>
@@ -221,9 +219,7 @@ export default function ObjectDetail() {
               <CardTitle>Файлы</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-muted-foreground">
-                Список файлов (в разработке)
-              </p>
+              <FilesList />
             </CardContent>
           </Card>
         </TabsContent>
@@ -234,13 +230,127 @@ export default function ObjectDetail() {
               <CardTitle>История изменений</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-muted-foreground">
-                Аудит-лента изменений (в разработке)
-              </p>
+              <HistoryTable />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ApartmentsTable({ buildingAddress }: { buildingAddress: string }) {
+  const [q, setQ] = useState("");
+  const units = Array.from(new Set(
+    mockCustomers
+      .filter(c => c.building === buildingAddress)
+      .map(c => c.apartment)
+  ));
+  const rows = units.filter(u => !q || u.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div className="space-y-3">
+      <Input placeholder="Поиск по номеру" value={q} onChange={e => setQ(e.target.value)} />
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Номер</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(u => (
+              <TableRow key={u}>
+                <TableCell>{u}</TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell className="text-muted-foreground">Нет данных</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function CommentsPanel() {
+  const [items, setItems] = useState<{ id: number; author: string; text: string; time: string }[]>([
+    { id: 1, author: "Админ", text: "Проверить подъезд А", time: "2025-10-28 12:00" },
+  ]);
+  const [text, setText] = useState("");
+  const add = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setItems(prev => [{ id: Date.now(), author: "Вы", text: text.trim(), time: new Date().toISOString().slice(0,16).replace('T',' ') }, ...prev]);
+    setText("");
+  };
+  return (
+    <div className="space-y-3">
+      <form onSubmit={add} className="flex gap-2">
+        <Input placeholder="Добавить комментарий" value={text} onChange={e => setText(e.target.value)} />
+        <Button type="submit">Отправить</Button>
+      </form>
+      <div className="space-y-3">
+        {items.map(i => (
+          <div key={i.id} className="rounded-lg border p-3">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{i.author}</span>
+              <span>{i.time}</span>
+            </div>
+            <p className="mt-1">{i.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FilesList() {
+  const files = [
+    { name: "photo_entrance.jpg", size: "1.2 MB" },
+    { name: "contract_sample.pdf", size: "320 KB" },
+  ];
+  return (
+    <div className="space-y-2">
+      {files.map(f => (
+        <div key={f.name} className="flex items-center justify-between rounded-lg border p-3">
+          <span className="font-medium">{f.name}</span>
+          <span className="text-sm text-muted-foreground">{f.size}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HistoryTable() {
+  const rows = [
+    { time: "2025-10-28 16:20", user: "Админ", action: "update", diff: "status: Новый -> В работе" },
+    { time: "2025-10-27 09:10", user: "Иванов", action: "create", diff: "created" },
+  ];
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Время</TableHead>
+            <TableHead>Сотрудник</TableHead>
+            <TableHead>Действие</TableHead>
+            <TableHead>Изменения</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r, idx) => (
+            <TableRow key={idx} className="hover:bg-muted/50">
+              <TableCell>{r.time}</TableCell>
+              <TableCell>{r.user}</TableCell>
+              <TableCell>{r.action}</TableCell>
+              <TableCell className="text-muted-foreground">{r.diff}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

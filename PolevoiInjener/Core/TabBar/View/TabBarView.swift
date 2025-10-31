@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TabBarView: View {
     @StateObject private var viewModel: TabBarViewModel
+    @State private var isAddRequestPresented: Bool = false
 
     init(viewModel: TabBarViewModel = TabBarViewModel()) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -22,14 +23,25 @@ struct TabBarView: View {
                 items: viewModel.items,
                 selectedDestination: viewModel.selectedDestination,
                 onSelect: { viewModel.select($0) },
-                onAction: { viewModel.performAction() }
+                onAction: handleAddRequestTap
             )
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        .fullScreenCover(isPresented: $isAddRequestPresented) {
+            AddRequestView()
+                .preferredColorScheme(.dark)
+        }
     }
 }
 
 #Preview {
     TabBarView()
         .preferredColorScheme(.dark)
+}
+
+private extension TabBarView {
+    func handleAddRequestTap() {
+        viewModel.performAction()
+        isAddRequestPresented = true
+    }
 }

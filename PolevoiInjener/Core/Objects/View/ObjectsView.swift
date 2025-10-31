@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MapKit
 
 struct ObjectsView: View {
     @State private var viewMode: ObjectsViewMode = .list
@@ -284,22 +285,14 @@ private struct ObjectsBuildingCard: View {
 }
 
 private struct ObjectsMapPlaceholder: View {
+    @State private var region = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 42.9849, longitude: 47.5047),
+        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+        )
     var body: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "map")
-                .font(.system(size: 48, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.45))
-
-            Text("Карта с текущей локацией")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
-
-            Text("(заглушка)")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.55))
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 320)
+        Map(coordinateRegion: $region)
+            .frame(maxWidth: .infinity)
+            .frame(height: 500)
         .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(Color.theme.primaryColor)

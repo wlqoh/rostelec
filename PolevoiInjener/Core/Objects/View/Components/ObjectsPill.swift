@@ -15,7 +15,7 @@ struct ObjectsPill: View {
     var body: some View {
         Text(text)
             .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(foreground)
+//            .foregroundStyle(foreground)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(

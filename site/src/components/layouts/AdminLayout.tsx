@@ -6,7 +6,7 @@ import {
   Users,
   BarChart3,
   FileText,
-  Settings,
+  // Settings,
   History,
   Bell,
   UserCog,
@@ -21,10 +21,10 @@ const navigation = [
   { name: "Клиенты", href: "/_admin/customers", icon: Users },
   { name: "Отчёты", href: "/_admin/reports", icon: FileText },
   { name: "Аналитика", href: "/_admin/analytics", icon: BarChart3 },
-  { name: "Пользователи", href: "/_admin/users", icon: UserCog },
+  { name: "Сотрудники", href: "/_admin/users", icon: UserCog },
   { name: "Аудит", href: "/_admin/audit", icon: History },
   { name: "Уведомления", href: "/_admin/notifications", icon: Bell },
-  { name: "Настройки", href: "/_admin/settings", icon: Settings },
+  // { name: "Настройки", href: "/_admin/settings", icon: Settings },
 ];
 
 export function AdminLayout() {
