@@ -12,6 +12,7 @@ struct ProfileView: View {
     @State private var isGPSEnabled: Bool = true
     @State private var isCameraEnabled: Bool = false
     @State private var isNotificationsEnabled: Bool = true
+//    @State private var vm = ProfileViewModel()
 
     var body: some View {
         ZStack {
@@ -31,6 +32,13 @@ struct ProfileView: View {
                 .padding(.bottom, 150)
             }
         }
+//        .task {
+//            await vm.loadData()
+//            vm.startAutoRefresh()
+//        }
+//        .onDisappear {
+//            vm.stopAutoRefresh()
+//        }
     }
 
     private var header: some View {

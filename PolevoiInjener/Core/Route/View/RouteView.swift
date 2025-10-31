@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct RouteView: View {
+    @State private var path: [ObjectDestination] = []
     private let tasks: [RouteTask] = [
         .init(
             id: UUID(),

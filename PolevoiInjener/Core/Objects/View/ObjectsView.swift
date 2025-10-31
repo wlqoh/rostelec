@@ -289,18 +289,31 @@ private struct ObjectsMapPlaceholder: View {
         center: CLLocationCoordinate2D(latitude: 42.9849, longitude: 47.5047),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         )
+    
+    let markers: [Marker] = [
+            Marker(id: 1, coordinate: .init(latitude: 42.9860, longitude: 47.5055)),
+            Marker(id: 2, coordinate: .init(latitude: 42.9825, longitude: 47.5020))
+        ]
     var body: some View {
-        Map(coordinateRegion: $region)
-            .frame(maxWidth: .infinity)
-            .frame(height: 500)
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.theme.primaryColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                )
-        )
+        Map(coordinateRegion: $region, annotationItems: markers) { marker in
+                   MapAnnotation(coordinate: marker.coordinate) {
+                       Circle()
+                           .fill(Color.red)
+                           .frame(width: 14, height: 14)
+                           .overlay(Circle().stroke(.white, lineWidth: 2))
+                           .shadow(radius: 4)
+                   }
+               }
+               .frame(maxWidth: .infinity)
+               .frame(height: 500)
+               .background(
+                   RoundedRectangle(cornerRadius: 26, style: .continuous)
+                       .fill(Color.theme.primaryColor)
+                       .overlay(
+                           RoundedRectangle(cornerRadius: 26, style: .continuous)
+                               .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                       )
+               )
     }
 }
 
@@ -332,4 +345,9 @@ private struct ObjectsEmptyState: View {
                 )
         )
     }
+}
+
+struct Marker: Identifiable {
+    let id: Int
+    let coordinate: CLLocationCoordinate2D
 }
